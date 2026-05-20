@@ -13,17 +13,21 @@ class AntigeneSearch:
     def __init__(
                     self,
                     project,               # name of the run
-                    input_fasta,           # hardcoded path to input fasta
                     hla_txt,               # path to HLA alleles text file (also hardcoded)
                     immunopeptidomics_data,               # path to the directory with immunopeptidomics data (also hardcoded)
+                    input_fasta=None,        # nt fasta (optional if aa_fasta given)
+                    input_aa_fasta=None,     # pre-translated aa fasta (optional). For example ORFs called from Riboseq
                     translation_mode='start_to_stop',
                     fdr_for_ip=0.01               #the default FDR value is 1%
                 ):
+        assert (input_fasta is None) != (input_aa_fasta is None), \
+            f"[{project}] Provide exactly one of input_fasta (nt) or input_aa_fasta (aa)"
         self.project = project
-        self.input_fasta = input_fasta
         self.hla_txt = hla_txt
-        self.translation_mode = translation_mode
         self.immunopeptidomics_data = immunopeptidomics_data
+        self.input_fasta = input_fasta
+        self.input_aa_fasta = input_aa_fasta
+        self.translation_mode = translation_mode
         self.fdr_for_ip = fdr_for_ip
 
 
@@ -89,7 +93,11 @@ rule translate:
 
 rule add_PE:
     input:
-        aminoacid_fasta = "_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta"
+        aminoacid_fasta = lambda wildcards: (
+            f"_data/antigene_search/{wildcards.project}/{wildcards.project}.{wildcards.translation_mode}.aminoacid.fasta"
+            if get_search(wildcards.project).input_fasta
+            else get_search(wildcards.project).input_aa_fasta
+        )
     output:
         aminoacid_fasta_PE_changed = temp("_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid_PEchanged.fasta")
     singularity:
