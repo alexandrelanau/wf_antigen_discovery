@@ -62,26 +62,32 @@ SEARCHES.append(AntigeneSearch(project="EW1505",
                                 immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1505/mzml"))    
 #done
 '''
-SEARCHES.append(AntigeneSearch(project="EW1528",
-                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20250916_EwS_ncORF.fasta",
+SEARCHES.append(AntigeneSearch(project="EW1528_fdb",
+                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20260527_EwS_ncORF_filtered.fasta",
                                 data_type="DIA",
                                 hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1528/EW1528_hlas.txt",
                                 immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1528/mzml"))     
 
-SEARCHES.append(AntigeneSearch(project="EW1732",
-                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20250916_EwS_ncORF.fasta",
+SEARCHES.append(AntigeneSearch(project="EW1732_fdb",
+                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20260527_EwS_ncORF_filtered.fasta",
                                 data_type="DIA",
                                 hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1732/EW1732_hlas.txt",
                                 immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1732/mzml"))
 
-SEARCHES.append(AntigeneSearch(project="EW1343",
-                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20250916_EwS_ncORF.fasta",
-                                data_type="DIA",
-                                hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1343/EW1343_hlas.txt",
-                                immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1343/mzml"))
-
-SEARCHES.append(AntigeneSearch(project="EW1260",
-                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20250916_EwS_ncORF.fasta",
+SEARCHES.append(AntigeneSearch(project="EW1260_fdb",
+                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20260527_EwS_ncORF_filtered.fasta",
                                 data_type="DIA",
                                 hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1260/EW1260_hlas.txt",
                                 immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1260/mzml"))   
+
+SEARCHES.append(AntigeneSearch(project="EW1505_fdb",
+                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20260527_EwS_ncORF_filtered.fasta",
+                                data_type="DIA",
+                                hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1505/EW1505_hlas.txt",
+                                immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1505/mzml"))    
+
+SEARCHES.append(AntigeneSearch(project="EW1343_fdb",
+                                input_aa_fasta="/mnt/raid0/ewing_sarcoma/data/databases/new_db_from_Luuk/20260527_EwS_ncORF_filtered.fasta",
+                                data_type="DIA",
+                                hla_txt="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1343/EW1343_hlas.txt",
+                                immunopeptidomics_data="/mnt/raid0/ewing_sarcoma/data/tumors_immunopeptidomics/EW1343/mzml"))    

@@ -9,3 +9,4 @@ _data/*
 .java/*
 .config/*
 .cache/*
+*.pyc
