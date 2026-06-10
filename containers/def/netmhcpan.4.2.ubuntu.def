@@ -1,0 +1,5 @@
+Bootstrap: docker
+From: mskcc/netmhcpan:4.2-x
+
+%test
+    /usr/local/bin/netMHCpan-4.2 || echo "netMHCpan-4.2 is not found!"

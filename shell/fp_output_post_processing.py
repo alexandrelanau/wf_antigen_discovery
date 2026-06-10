@@ -326,7 +326,8 @@ def plot_NetMHCpan_binding_results(run_, xls, save_dir=None):
 def main():
     parser = argparse.ArgumentParser(description='Perform postprocessing on Fragpipe outputs')
     parser.add_argument('--input_tsv', required=True, help='Path to Fragpipe output psm.tsv file')
-    parser.add_argument('--input_xls', required=True, help='Path to NetMHCpan output file')
+    parser.add_argument('--netMHCpan_xls', required=True, help='Path to NetMHCpan output file')
+    parser.add_argument('--GibbsCluster_csv', required=True, help='Path to GibbsCluster output file')
     parser.add_argument('--sample', required=True, help='Project name')
     parser.add_argument('--hla', required=True, help='Sample hlas. Format example: HLA-A02:01,HLA-A03:01,HLA-B27:02,HLA-B44:05,HLA-C02:02')
     parser.add_argument('--output_dir', required=True, help='A directory to store output figures')
@@ -350,7 +351,7 @@ def main():
     plot_class_distribution(run, max_ = unique_count+3000, save_dir = args.output_dir)
     plot_length_distribution(run, max_ = 0.6*unique_count+3000,  save_dir = args.output_dir)
     plot_corr_HI_RT(run, scale_=kd, save_dir=args.output_dir)
-    df_binding = plot_NetMHCpan_binding_results(run, args.input_xls, save_dir = args.output_dir)
+    df_binding = plot_NetMHCpan_binding_results(run, args.netMHCpan_xls, save_dir = args.output_dir)
     df_final = run.unique.merge(df_binding.rename(columns={'Peptide': 'seq_clear'}), on='seq_clear', how='left')
     columns_to_fillna = dict(zip(args.hla.split(','), ['No binder']*len(args.hla.split(','))))
     columns_to_fillna.update({'Binder': False})

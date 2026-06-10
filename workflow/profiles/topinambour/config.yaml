@@ -1,0 +1,22 @@
+# Profile: mariia
+rerun-incomplete: True
+printshellcmds: True
+benchmark-extended: True
+
+# RESOURCES
+core: 40
+resources:
+  - mem_mb=150000
+
+# REPRODUCIBILITY
+use-apptainer: True
+singularity-args: "--bind /storage,/potager"
+
+# CONFIG
+config:
+  MAX_RAM_MB: 150000
+  MAX_THREADS: 40
+  todo: topinambour
+  reference_proteome: "/storage/TAA/scripts/wf_antigen_discovery/_data/ref_proteome/uniprotkb_with_isoforms_reviewed_true_AND_model_organ_2024_10_29_PE_changed.fasta"
+  orffinder: "/storage/TAA/scripts/wf_antigen_discovery/containers/shared_shell/wf_personalized_antigenes/ORFfinder"
+  fragpipe_tools_folder: "/storage/TAA/scripts/wf_antigen_discovery/containers/shared_shell/wf_personalized_antigenes"

@@ -1,0 +1,5 @@
+Bootstrap: docker
+From: shaolab/gibbscluster:2.0
+
+%test
+    /usr/local/bin/gibbscluster || echo "gibbscluster-2.0 is not found!"

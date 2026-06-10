@@ -73,21 +73,37 @@ rule fix_fasta_header:
             --output {output.input_fasta_fixed}
         """
 
+# rule translate:
+#     input:
+#         input_fasta_fixed = "_data/antigene_search/{project}/{project}.fixed.fasta"
+#     output:
+#         aminoacid_fasta = temp("_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta")
+#     params:
+#         translation_mode = lambda wildcards: 1 if wildcards.translation_mode == 'start_to_stop' else 2,
+#         orffinder_executable = config["orffinder"]
+#     shell:
+#         '''
+#         time {params.orffinder_executable} \
+#             -in {input.input_fasta_fixed} \
+#             -out {output.aminoacid_fasta} \
+#             -s {params.translation_mode} -ml 30 -strand plus
+#         '''
+
 rule translate:
     input:
-        input_fasta_fixed = "_data/antigene_search/{project}/{project}.fixed.fasta"
+        input_fasta = "_data/antigene_search/{project}/{project}.fixed.fasta"
     output:
-        aminoacid_fasta = temp("_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta")
+        aminoacid_fasta = "_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta"
     params:
         translation_mode = lambda wildcards: 1 if wildcards.translation_mode == 'start_to_stop' else 2,
-        orffinder_executable = config["orffinder"]
+    singularity: 
+        "workflow/containers/image/python.3.12.2.debian.sif"
     shell:
-        '''
-        time {params.orffinder_executable} \
-            -in {input.input_fasta_fixed} \
-            -out {output.aminoacid_fasta} \
-            -s {params.translation_mode} -ml 30 -strand plus
-        '''
+        """
+        python ./workflow/shell/3_frame_translation.py \
+            --input {input.input_fasta} \
+            --output {output.aminoacid_fasta}
+        """
 
 
 rule add_PE:
@@ -185,9 +201,24 @@ rule run_Fragpipe:
         '''
 
 
-rule run_netMHCpan:
+rule create_pep_file:
     input:
         psm_tsv = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}/{project}/psm.tsv",
+    output:
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep"
+    singularity:
+        "workflow/containers/image/netmhcpan.4.1.ubuntu.sif"
+    shell:
+        '''
+        mkdir -p _data/antigene_search/{params.project}/fragpipe_postprocessing
+        python3.6 ./workflow/shell/create_pep_file.py \
+            --input {input.psm_tsv} \
+            --output _{output.pep}
+        '''
+
+rule run_netMHCpan:
+    input:
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt
     output:
         xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls"
@@ -199,14 +230,30 @@ rule run_netMHCpan:
         "workflow/containers/image/netmhcpan.4.1.ubuntu.sif"
     shell:
         '''
-        mkdir -p _data/antigene_search/{params.project}/fragpipe_postprocessing
         hlas_line=$(<{input.hlas})
-        python3.6 ./workflow/shell/create_pep_file.py \
-            --input {input.psm_tsv} \
-            --output _data/antigene_search/{params.project}/fragpipe_postprocessing/{params.project}.pep
         /usr/local/bin/netMHCpan-4.1/netMHCpan -a $hlas_line \
-            -p _data/antigene_search/{params.project}/fragpipe_postprocessing/{params.project}.pep \
+            -p {input.pep} \
             -xls -xlsfile {output.xls} > /dev/null
+        '''
+
+rule run_GibbsCluster:
+    input:
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep",
+        hlas = lambda wildcards: get_search(wildcards.project).hla_txt
+    output:
+        gibbs_csv = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.GibbsCluster_out.csv"
+    params:
+        project = lambda wildcards: wildcards.project
+    singularity:
+        "workflow/containers/image/gibbscluster.2.0.ubuntu.sif"
+    shell:
+        '''
+        hlas_line=$(<{input.hlas})
+        num_hlas=$(awk -F',' '{print NF}' <<< "$hlas_line")
+        echo "$num_hlas"
+        /gibbsCluster/gibbscluster-2.0/bin/gibbs_cluster_1.2.2_DB.Linux_x86_64 -g $num_hlas \
+            -trash
+            {input.pep} > {output.csv}
         '''
 
 
@@ -214,7 +261,8 @@ rule fp_output_postprocessing:
     input:
         psm_tsv = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}/{project}/psm.tsv",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt,
-        xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls",
+        netMHCpan_xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls",
+        GibbsCluster_csv = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.GibbsCluster_out.csv",
         hla_la_cryptic = "_data/HLA_ligand_atlas/HLA_la_reported_cryptic_peptides.csv"
     output:
         csv = "_data/antigene_search/{project}/fragpipe_postprocessing/Summary.{project}.{translation_mode}.csv"
@@ -230,7 +278,8 @@ rule fp_output_postprocessing:
         hlas_line=$(<{input.hlas})
         python ./workflow/shell/fp_output_post_processing.py \
             --input_tsv {input.psm_tsv} \
-            --input_xls {input.xls} \
+            --netMHCpan_xls {input.netMHCpan_xls} \
+            --GibbsCluster_csv {input.GibbsCluster_csv} \
             --sample {params.project} \
             --hla $hlas_line \
             --output_dir {params.output_folder} \
