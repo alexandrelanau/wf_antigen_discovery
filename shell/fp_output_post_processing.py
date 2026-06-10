@@ -345,13 +345,11 @@ def main():
     metadata["psm_count"] = psm_count
     metadata["unique_count"] = unique_count
     row_dict = metadata.to_dict(orient="records")[0]
-    #print("Basic information on the current run:")
-    #for key, value in row_dict.items():
-        #print(f"{key}: {value}")
     plot_class_distribution(run, max_ = unique_count+3000, save_dir = args.output_dir)
     plot_length_distribution(run, max_ = 0.6*unique_count+3000,  save_dir = args.output_dir)
     plot_corr_HI_RT(run, scale_=kd, save_dir=args.output_dir)
     df_binding = plot_NetMHCpan_binding_results(run, args.netMHCpan_xls, save_dir = args.output_dir)
+    print(df_binding)
     df_final = run.unique.merge(df_binding.rename(columns={'Peptide': 'seq_clear'}), on='seq_clear', how='left')
     columns_to_fillna = dict(zip(args.hla.split(','), ['No binder']*len(args.hla.split(','))))
     columns_to_fillna.update({'Binder': False})

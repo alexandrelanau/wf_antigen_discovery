@@ -20,7 +20,8 @@ class AntigeneSearch:
                     input_aa_fasta=None,     # pre-translated aa fasta (optional). For example ORFs called from Riboseq
                     translation_mode='start_to_stop',
                     data_type='DDA',    #immunopeptidomics spectral  data  type. For reasons unknown to me, DIA  only accepts .mzML format
-                    fdr_for_ip=0.01               #the default FDR value is 1%
+                    fdr_for_ip=0.01,               #the default FDR value is 1%
+                    grouped_fdr=True
                 ):
         assert (input_fasta is None) != (input_aa_fasta is None), \
             f"[{project}] Provide exactly one of input_fasta (nt) or input_aa_fasta (aa)"
@@ -32,6 +33,7 @@ class AntigeneSearch:
         self.translation_mode = translation_mode
         self.data_type = data_type
         self.fdr_for_ip = fdr_for_ip
+        self.grouped_fdr = ' --group' if grouped_fdr else ''
 
 
 def get_search(project):
@@ -64,6 +66,7 @@ rule fix_fasta_header:
         input_fasta = lambda wildcards: get_search(wildcards.project).input_fasta
     output:
         input_fasta_fixed = "_data/antigene_search/{project}/{project}.fixed.fasta"
+    benchmark: "_data/benchmark/fix_fasta_header/{project}.benchmark.txt",
     singularity: 
         "workflow/containers/image/python.3.12.2.debian.sif"
     shell:
@@ -73,29 +76,29 @@ rule fix_fasta_header:
             --output {output.input_fasta_fixed}
         """
 
-# rule translate:
-#     input:
-#         input_fasta_fixed = "_data/antigene_search/{project}/{project}.fixed.fasta"
-#     output:
-#         aminoacid_fasta = temp("_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta")
-#     params:
-#         translation_mode = lambda wildcards: 1 if wildcards.translation_mode == 'start_to_stop' else 2,
-#         orffinder_executable = config["orffinder"]
-#     shell:
-#         '''
-#         time {params.orffinder_executable} \
-#             -in {input.input_fasta_fixed} \
-#             -out {output.aminoacid_fasta} \
-#             -s {params.translation_mode} -ml 30 -strand plus
-#         '''
+rule translate_start_to_stop:
+    input:
+        input_fasta_fixed = "_data/antigene_search/{project}/{project}.fixed.fasta"
+    output:
+        aminoacid_fasta = temp("_data/antigene_search/{project}/{project}.start_to_stop.aminoacid.fasta")
+    params:
+        orffinder_executable = config["orffinder"]
+    benchmark: "_data/benchmark/translate_start_to_stop/{project}.benchmark.txt",
+    shell:
+        '''
+        time {params.orffinder_executable} \
+            -in {input.input_fasta_fixed} \
+            -out {output.aminoacid_fasta} \
+            -s 1 -ml 30 -strand plus
+        '''
 
-rule translate:
+rule translate_stop_to_stop:
     input:
         input_fasta = "_data/antigene_search/{project}/{project}.fixed.fasta"
     output:
-        aminoacid_fasta = "_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid.fasta"
+        aminoacid_fasta = "_data/antigene_search/{project}/{project}.stop_to_stop.aminoacid.fasta"
     params:
-        translation_mode = lambda wildcards: 1 if wildcards.translation_mode == 'start_to_stop' else 2,
+    benchmark: "_data/benchmark/translate_stop_to_stop/{project}.benchmark.txt",
     singularity: 
         "workflow/containers/image/python.3.12.2.debian.sif"
     shell:
@@ -115,6 +118,7 @@ rule add_PE:
         )
     output:
         aminoacid_fasta_PE_changed = temp("_data/antigene_search/{project}/{project}.{translation_mode}.aminoacid_PEchanged.fasta")
+    benchmark: "_data/benchmark/add_PE/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/python.3.12.2.debian.sif"
     shell:
@@ -134,6 +138,7 @@ rule construct_database:
         database_for_msfragger = "_data/antigene_search/{project}/final_msfragger_database.{project}.{translation_mode}.fasta"
     params:
         project = lambda wildcards: wildcards.project
+    benchmark: "_data/benchmark/construct_database/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/fragpipe.22.0.ubuntu.sif"
     group:
@@ -165,6 +170,7 @@ rule run_Fragpipe:
     params:
         project = lambda wildcards: wildcards.project,
         fdr = lambda wildcards: get_search(wildcards.project).fdr_for_ip,
+        grouped_fdr = lambda wildcards: get_search(wildcards.project).grouped_fdr,
         data_type = lambda wildcards: get_search(wildcards.project).data_type,
         fragpipe_workdir = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}",
         fragpipe_tools_folder = config["fragpipe_tools_folder"],
@@ -174,6 +180,7 @@ rule run_Fragpipe:
     resources:
         mem_mb = lambda wildcards, attempt: min(MAX_RAM_MB, 96000 + (attempt * 32000)),
         runtime = 120,
+    benchmark: "_data/benchmark/run_Fragpipe/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/fragpipe.22.0.ubuntu.sif"
     group:
@@ -185,7 +192,7 @@ rule run_Fragpipe:
         ls {input.immunopeptidomics_data}
         mkdir -p {params.fragpipe_workdir}
         sed -e "s|^database.db-path=.*|database.db-path={input.database_for_msfragger}|" \
-            -e "s|^phi-report.filter=.*|phi-report.filter=--sequential --prot 1 --group --pep {params.fdr}|" \
+            -e "s|^phi-report.filter=.*|phi-report.filter=--sequential --prot 1{params.grouped_fdr} --pep {params.fdr}|" \
             "{input.workflow_template}" > "{output.workflow}"
         ls {input.immunopeptidomics_data} | awk -v proj="{params.project}" -v ipd="{input.immunopeptidomics_data}" -v dtype="{params.data_type}"\
             '{{print ipd "/" $0 "\t" proj "\t\t" dtype}}' > "_data/antigene_search/{params.project}/{params.project}.manifest"
@@ -205,7 +212,10 @@ rule create_pep_file:
     input:
         psm_tsv = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}/{project}/psm.tsv",
     output:
-        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep"
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.pep"
+    params:
+        project = lambda wildcards: wildcards.project,
+    benchmark: "_data/benchmark/create_pep_file/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/netmhcpan.4.1.ubuntu.sif"
     shell:
@@ -218,7 +228,7 @@ rule create_pep_file:
 
 rule run_netMHCpan:
     input:
-        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep",
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.pep",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt
     output:
         xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls"
@@ -226,6 +236,7 @@ rule run_netMHCpan:
         project = lambda wildcards: wildcards.project
     resources:
         runtime = 120
+    benchmark: "_data/benchmark/run_netMHCpan/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/netmhcpan.4.1.ubuntu.sif"
     shell:
@@ -238,22 +249,25 @@ rule run_netMHCpan:
 
 rule run_GibbsCluster:
     input:
-        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.pep",
+        pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.pep",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt
     output:
         gibbs_csv = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.GibbsCluster_out.csv"
     params:
         project = lambda wildcards: wildcards.project
+    benchmark: "_data/benchmark/run_GibbsCluster/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/gibbscluster.2.0.ubuntu.sif"
     shell:
         '''
         hlas_line=$(<{input.hlas})
-        num_hlas=$(awk -F',' '{print NF}' <<< "$hlas_line")
+        num_hlas=$(awk -F',' '{{print NF}}' <<< "$hlas_line")
         echo "$num_hlas"
-        /gibbsCluster/gibbscluster-2.0/bin/gibbs_cluster_1.2.2_DB.Linux_x86_64 -g $num_hlas \
-            -trash
-            {input.pep} > {output.csv}
+
+        /gibbsCluster/gibbscluster-2.0/bin/gibbs_cluster_1.2.2_DB.Linux_x86_64 \
+            -g $num_hlas \
+            -trash \
+            {input.pep} > {output.gibbs_csv}
         '''
 
 
@@ -271,6 +285,7 @@ rule fp_output_postprocessing:
         fdr = lambda wildcards: get_search(wildcards.project).fdr_for_ip,
         output_folder = lambda wildcards: f"_data/antigene_search/{wildcards.project}/fragpipe_postprocessing/",
         translation_mode = lambda wildcards: wildcards.translation_mode,
+    benchmark: "_data/benchmark/fp_output_postprocessing/{project}.{translation_mode}.benchmark.txt",
     singularity:
         "workflow/containers/image/python.3.12.2.debian.sif"
     shell:
