@@ -1,0 +1,129 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%environment
+
+    export PYTHON=/usr/bin/python3
+    export PYTHON2=/usr/bin/python2
+
+    export MMD_PATH=/opt/mhcmotifdecon
+    export MHCMOTIFDECON_HOME=/opt/mhcmotifdecon
+
+    export NETMHCPAN=/opt/netMHCpan
+    export NETMHCIIPAN=/opt/netMHCIIpan
+
+    export GIBBS=/opt/gibbscluster
+
+    export SEQ2LOGO=$MMD_PATH/bin/seq2logo-2.1/Seq2Logo.py
+    export SEQ2LOGO_PYTHON=/usr/bin/python2
+
+    export PATH=/opt/mhcmotifdecon:$PATH
+    export PATH=/opt/mhcmotifdecon/bin/Linux_x86_64/bin:$PATH
+    export PATH=/opt/netMHCpan:$PATH
+    export PATH=/opt/netMHCIIpan:$PATH
+    export PATH=/opt/gibbscluster:$PATH
+
+%files
+
+    shared_shell/wf_personalized_antigenes/mhcmotifdecon-1.2c.ALL/mhcmotifdecon-1.2 /opt/mhcmotifdecon
+    shared_shell/wf_personalized_antigenes/netMHCpan-4.2cstatic.Linux/netMHCpan-4.2 /opt/netMHCpan
+    shared_shell/wf_personalized_antigenes/netMHCIIpan-4.3jstatic.Linux/netMHCIIpan-4.3 /opt/netMHCIIpan
+    shared_shell/wf_personalized_antigenes/gibbscluster-2.0f.Linux/gibbscluster-2.0 /opt/gibbscluster
+
+%post
+
+    apt-get update
+
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        ca-certificates \
+        python3 \
+        python3-pip \
+        python3-numpy \
+        python3-scipy \
+        python3-pandas \
+        python3-matplotlib \
+        python3-seaborn \
+        python3-pil \
+        python2 \
+        curl \
+        tcsh \
+        perl \
+        gawk \
+        ghostscript \
+        libfreetype6-dev \
+        libpng-dev
+
+    # -------------------------
+    # Python2 pip bootstrap
+    # -------------------------
+
+    curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py
+    python2 get-pip.py
+
+    python2 -m pip install --upgrade \
+        "setuptools<45" \
+        "pip<21"
+
+    python2 -m pip install \
+        numpy==1.16.6 \
+        matplotlib==2.2.5
+
+    #
+    # MHCMotifDecon
+    #
+
+    sed -i 's|^PYTHON=.*|PYTHON="/usr/bin/python3"|' \
+        /opt/mhcmotifdecon/MHCMotifDecon
+
+    sed -i 's|^MMD_PATH=.*|MMD_PATH="/opt/mhcmotifdecon"|' \
+        /opt/mhcmotifdecon/MHCMotifDecon
+
+    sed -i 's|^NETMHCPAN=.*|NETMHCPAN="/opt/netMHCpan"|' \
+        /opt/mhcmotifdecon/MHCMotifDecon
+
+    sed -i 's|^NETMHCIIPAN=.*|NETMHCIIPAN="/opt/netMHCIIpan"|' \
+        /opt/mhcmotifdecon/MHCMotifDecon
+
+    sed -i 's|^SEQ2LOGO=.*|SEQ2LOGO="/opt/mhcmotifdecon/bin/seq2logo-2.1/Seq2Logo.py"|' \
+    /opt/mhcmotifdecon/MHCMotifDecon
+
+    SEQ2LOGO_FILE=$(find /opt -name Seq2Logo.py | head -1)
+
+    sed -i '1 s|python2\.7|python2|' "$SEQ2LOGO_FILE"
+    chmod +x "$SEQ2LOGO_FILE"
+
+
+    #
+    # NetMHCpan
+    #
+
+    grep -rl '/tools/src/netMHCpan-4.2' /opt/netMHCpan | \
+        xargs sed -i 's|/tools/src/netMHCpan-4.2|/opt/netMHCpan|g' || true
+    
+    # MHCMotifDecon expects NetMHCpan data/synlist.bin
+    # NetMHCpan 4.2 ships synlist_context.bin instead.
+    if [ ! -f /opt/netMHCpan/data/synlist.bin ] && \
+    [ -f /opt/netMHCpan/data/synlist_context.bin ]; then
+        cp /opt/netMHCpan/data/synlist_context.bin \
+        /opt/netMHCpan/data/synlist.bin
+    fi
+
+    #
+    # NetMHCIIpan
+    #
+
+    grep -rl '/tools/src/netMHCIIpan-4.3' /opt/netMHCIIpan | \
+        xargs sed -i 's|/tools/src/netMHCIIpan-4.3|/opt/netMHCIIpan|g' || true
+
+    #
+    # GibbsCluster
+    #
+
+    grep -rl 'gibbscluster-2.0' /opt/gibbscluster | \
+        xargs sed -i 's|/Users/myself/gibbscluster-2.0|/opt/gibbscluster|g' || true
+
+    chmod -R a+rX /opt
+
+%runscript
+
+    exec "$@"

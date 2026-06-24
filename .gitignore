@@ -1,11 +1,16 @@
 shell/diaTracer-1.1.5/*
 shell/IonQuant-1.10.27/*
 shell/MSFragger-4.1/*
+containers/shared_shell/wf_personalized_antigenes/gibbscluster-2.0f.Linux/*
+containers/shared_shell/wf_personalized_antigenes/mhcmotifdecon-1.2c.ALL/*
+containers/shared_shell/wf_personalized_antigenes/netMHCIIpan-4.3jstatic.Linux/*
+containers/shared_shell/wf_personalized_antigenes/netMHCpan-4.2cstatic.Linux/*
 *.sif
 shell/ORFfinder
 *.log
 .snakemake/*
 _data/*
+workflow/profiles/*/todo.py
 .java/*
 .config/*
 .cache/*
