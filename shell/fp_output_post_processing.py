@@ -261,138 +261,6 @@ def plot_corr_HI_RT(run_, scale_=kd, save_dir=None):
     if save_dir:
         plt.savefig(Path(save_dir) / f"Correlation_HI_RT_{run_.sample}_{run_.search_engine}_{run_.fdr}.png", dpi=600, bbox_inches='tight')
 
-# def plot_NetMHCpan_binding_results(run_, xls, save_dir=None):
-#     # Read NetMHCpan .out file
-#     rows = []
-
-#     with open(xls) as f:
-#         for line in f:
-#             line = line.strip()
-#             if (
-#                 not line
-#                 or line.startswith("#")
-#                 or line.startswith("-")
-#                 or line.startswith("Pos")
-#             ):
-#                 continue
-#             fields = line.split()
-#             if not fields[0].isdigit():
-#                 continue
-#             peptide = fields[2]
-#             hla = fields[1]
-#             # Extract Score_EL and %Rank_EL from the end of the line
-#             m = re.search(
-#                 r'PEPLIST\s+([0-9.eE+-]+)\s+([0-9.eE+-]+)',
-#                 line
-#             )
-#             if m is None:
-#                 print(f"Could not parse line:\n{line}")
-#                 continue
-#             rank = float(m.group(2))
-#             rows.append(
-#                 {
-#                     "Peptide": peptide,
-#                     "MHC": hla,
-#                     "Rank": rank
-#                 }
-#             )
-
-#     df_long = pd.DataFrame(rows)
-#     df = (
-#         df_long
-#         .pivot_table(
-#             index="Peptide",
-#             columns="MHC",
-#             values="Rank",
-#             aggfunc="first"
-#         )
-#         .reset_index()
-#     )
-#     hlas = [c for c in df.columns if c != "Peptide"]
-#     for hla in hlas:
-#         df[f"{hla}_rank"] = df[hla]
-#         df[hla] = df[f"{hla}_rank"].apply(
-#             lambda x:
-#                 "Strong" if x < 0.5
-#                 else "Weak" if x < 2
-#                 else "No binder"
-#         )
-
-#     # Recreate NB column
-#     df["NB"] = (
-#         df[hlas]
-#         .isin(["Strong", "Weak"])
-#         .sum(axis=1)
-#     )
-
-#     #plot all per allele
-#     allele_binder_counts = pd.DataFrame.from_dict({'Allele': hlas, 'Count_strong': [len(df[df[hla]=='Strong']) for hla in hlas], 'Count_weak': [len(df[df[hla]=='Weak'])  for hla in hlas]})
-#     #print(allele_binder_counts)
-#     bar = allele_binder_counts.plot(kind = 'bar',x='Allele', stacked = True, color = ["#00008b", "#4169e1"], zorder=2)
-#     bar.yaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgray', zorder=0)
-#     for i, row in allele_binder_counts.iterrows():
-#         plt.text(i, row['Count_strong'], str(row['Count_strong']), ha="center", va="bottom", zorder=3)
-#         plt.text(i, row['Count_strong']+row['Count_weak'], str(row['Count_weak']), ha="center", va="bottom", zorder=3)
-#     bar.set_ylabel("Count of binders per allele")
-#     bar.set_title(f"All {run_.sample} peptides \n NetMHCpan binding prediction", fontsize=16, weight='bold')
-#     plt.xticks(rotation=45)
-#     sns.despine()
-#     plt.tight_layout()
-#     if save_dir:
-#         plt.savefig(Path(save_dir) /f"{run_.sample}_NetMHCpan_binding_all_per_allele.png", dpi=600, bbox_inches='tight')
-
-#     #plot all total
-#     df['Binder'] = df['NB'] != 0
-#     plt.figure(figsize=(2, 3))
-#     bar_plot = sns.barplot(df, y='Binder', errorbar=None, color="#00008b", zorder=3)
-#     bar_plot.text(0,  df['Binder'].mean(), df['Binder'].sum(), ha="center", va="bottom", zorder=2)
-#     bar_plot.yaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgray')
-#     bar_plot.set(ylim=(None, 1.0))
-#     bar_plot.set_ylabel("Fraction of binders")
-#     bar_plot.set_title(f"All {run_.sample} peptides \n NetMHCpan binding prediction", fontsize=16, weight='bold')
-#     sns.despine()
-#     plt.tight_layout()
-#     if save_dir:
-#         plt.savefig(Path(save_dir) /f"{run_.sample}_NetMHCpan_binding_all.png", dpi=600, bbox_inches='tight')
-
-#     non_can = run_.unique[run_.unique['class']=='Non canonical']['seq_clear'].tolist()
-#     mask = df['Peptide'].isin(non_can)
-#     df_non_can = df[mask]
-#     #print(df_non_can)
-#     #plot non canonical per allele
-#     allele_binder_counts = pd.DataFrame.from_dict({'Allele': hlas, 'Count_strong': [len(df_non_can[df_non_can[hla]=='Strong'])  for hla in hlas], 'Count_weak': [len(df_non_can[df_non_can[hla]=='Weak'])  for hla in hlas]})
-#     #print(allele_binder_counts)
-#     bar = allele_binder_counts.plot(kind = 'bar',x='Allele', stacked = True, color = ["#00008b", "#4169e1"], zorder=2)
-#     bar.yaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgray', zorder=0)
-#     for i, row in allele_binder_counts.iterrows():
-#         if row['Count_strong'] != 0:
-#             plt.text(i, row['Count_strong'], str(row['Count_strong']), ha="center", va="bottom", zorder=3)
-#         if row['Count_weak'] != 0:
-#             plt.text(i, row['Count_strong']+row['Count_weak'], str(row['Count_weak']), ha="center", va="bottom", zorder=3)
-#     bar.set_ylabel("Count of binders per allele")
-#     bar.set_title(f"Non-canonical peptides \n {run_.sample} \n NetMHCpan binding prediction", fontsize=16, weight='bold')
-#     plt.xticks(rotation=45)
-#     sns.despine()
-#     plt.tight_layout()
-#     if save_dir:
-#         plt.savefig(Path(save_dir) /f"{run_.sample}_NetMHCpan_binding_noncanonical_peptides_per_allele.png", dpi=600, bbox_inches='tight')
-
-#     #plot non canonical total
-#     df_non_can['Binder'] = df_non_can['NB'] != 0
-#     plt.figure(figsize=(2, 3))
-#     bar_plot = sns.barplot(df_non_can , y='Binder', errorbar=None, color="#00008b", zorder=3)
-#     bar_plot.text(0,  df_non_can['Binder'].mean(), df_non_can['Binder'].sum(), ha="center", va="bottom", zorder=2)
-#     bar_plot.yaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgray')
-#     bar_plot.set(ylim=(None, 1.0))
-#     bar_plot.set_ylabel("Fraction of binders")
-#     bar_plot.set_title(f"Non-canonical peptides \n {run_.sample} \n NetMHCpan binding prediction", fontsize=16, weight='bold')
-#     sns.despine()
-#     plt.tight_layout()
-#     if save_dir:
-#         plt.savefig(Path(save_dir) /f"{run_.sample}_NetMHCpan_binding_noncanonical_peptides_all.png", dpi=600, bbox_inches='tight')
-
-#     return df
-
 def parse_gibbscluster(path):
     cluster_map = {}
 
@@ -871,13 +739,22 @@ def main():
     df_motif, hlas = binding_df_to_wide(
         parse_MHCMotifDecon(args.motifdecon_txt)
     )
-
+    print(df_motif.columns)
     df_final = df_final.merge(
         df_motif.rename(columns={"Peptide": "seq_clear"}),
         on="seq_clear",
         how="left",
         suffixes=("", "_motif")
     )
+    print(df_final.columns)
+    
+    df_final = df_final.rename(
+    columns=lambda c: (
+        f"{c}_MotifDeconv"
+        if c.startswith(("HLA", "NB"))
+        else c
+    ))   
+    print(df_final.columns)
 
     plot_binding_results(
         run,
@@ -893,13 +770,6 @@ def main():
         df_binding,hlas = netmhcpan_annotation_table(
             args.netMHCpan_out
         )
-
-        df_final = df_final.merge(
-            df_binding.rename(columns={"Peptide": "seq_clear"}),
-            on="seq_clear",
-            how="left",
-            suffixes=("", "_netMHCpan")
-        )
         
         plot_binding_results(
             run,
@@ -909,6 +779,22 @@ def main():
             save_dir=args.output_dir
         )
         
+        df_binding = df_binding.rename(
+        columns=lambda c: (
+            f"{c}_netMHCpan"
+            if c.startswith(("HLA", "NB"))
+            else c
+        )) 
+        df_binding["NB_netMHCpan"] = (df_binding["NB_netMHCpan"] > 0).astype(int)
+
+        df_final = df_final.merge(
+            df_binding.rename(columns={"Peptide": "seq_clear"}),
+            on="seq_clear",
+            how="left",
+            suffixes=("", "_netMHCpan")
+        )
+    print(df_final.columns)
+        
 
     # --- GibbsCluster annotation (optional) ---
     if args.GibbsCluster_csv:
@@ -916,6 +802,7 @@ def main():
         gibbs_map = parse_gibbscluster(
             args.GibbsCluster_csv
         )
+        print(gibbs_map)
 
         df_final["gibbs_cluster"] = (
             df_final["seq_clear"]
@@ -929,8 +816,10 @@ def main():
     columns_to_fillna = dict(zip(args.hla.split(','), ['No binder']*len(args.hla.split(','))))
     columns_to_fillna.update({'Binder': False})
     df_final = df_final.fillna(value=columns_to_fillna)
+    print(df_final.columns)
     hlala_cryptic = pd.read_csv(args.hla_la_cryptic)
     df_final['found_in_benign_tissue'] = df_final[df_final['class']=='Non canonical']['seq_clear'].apply(lambda x: x in hlala_cryptic['Sequence'].values)
+    print(df_final.columns)
     df_final.to_csv(Path(args.output_dir) /f'Summary.{args.sample}.{args.translation_mode}.csv', index=False)
 
 if __name__ == "__main__":

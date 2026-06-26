@@ -13,7 +13,7 @@ def main():
     peptides = psm_file["Peptide"].unique().tolist()
     with open(args.output, 'w') as file:
         for pep in peptides:
-            if 7<len(pep)<15:
+            if 7<len(pep)<15 and "U" not in pep:
                 file.write(pep+'\n')
 
 
