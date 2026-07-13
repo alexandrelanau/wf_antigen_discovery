@@ -7,6 +7,7 @@ containers/shared_shell/wf_personalized_antigenes/netMHCIIpan-4.3jstatic.Linux/*
 containers/shared_shell/wf_personalized_antigenes/netMHCpan-4.2cstatic.Linux/*
 *.sif
 shell/ORFfinder
+containers/shared_shell/*
 *.log
 .snakemake/*
 _data/*
