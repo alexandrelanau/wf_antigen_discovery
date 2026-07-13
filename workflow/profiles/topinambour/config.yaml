@@ -7,6 +7,7 @@ benchmark-extended: True
 core: 40
 resources:
   - mem_mb=150000
+  - mhcmotifdecon=1
 
 # REPRODUCIBILITY
 use-apptainer: True

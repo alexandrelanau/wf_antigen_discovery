@@ -26,12 +26,12 @@ paths = [
         if os.path.isdir(p) and 'hla_type' not in p] 
 print(paths)
 
-for path in paths:
+for path in paths[:1]:
     sample_id = path.split('/')[-1]
     print(sample_id)
     SEARCHES.append(
         AntigeneSearch(
-            project=sample_id.replace('-', '_')+'_without_grouped_fdr',
+            project=sample_id.replace('-', '_')+'_without_grouped_fdr_test_new_version',
             input_fasta="/storage/TAA/_data/estimates/testis/filtered_TAA_testis.fasta",
             hla_txt=f"/potager/_MARIIA/HLA_ligand_atlas_bypatient/hla_type/{sample_id}_HLA-I.txt",
             immunopeptidomics_data=path,
@@ -41,42 +41,42 @@ for path in paths:
         )
     )
     
-paths = [
-    p for p in glob('/storage/TAA/_data/IPs/IP_skcm/*')
-        if os.path.isdir(p) and 'pride' not in p and 'hla_type' not in p] 
-print(paths)
+# paths = [
+#     p for p in glob('/storage/TAA/_data/IPs/IP_skcm/*')
+#         if os.path.isdir(p) and 'pride' not in p and 'hla_type' not in p] 
+# print(paths)
 
-for path in paths:
-    sample_id = path.split('/')[-1]
-    print(sample_id)
-    SEARCHES.append(
-        AntigeneSearch(
-            project=sample_id.replace('-', '_')+'_without_grouped_fdr',
-            input_fasta="/storage/TAA/_data/estimates/testis/filtered_TAA_testis.fasta",
-            hla_txt=f"/storage/TAA/_data/IPs/IP_skcm/hla_type/{sample_id}_HLA_type.txt",
-            immunopeptidomics_data=path,
-            translation_mode='stop_to_stop',
-            grouped_fdr=False,
-            mhc_tool=['all']
-        )
-    )
+# for path in paths:
+#     sample_id = path.split('/')[-1]
+#     print(sample_id)
+#     SEARCHES.append(
+#         AntigeneSearch(
+#             project=sample_id.replace('-', '_')+'_without_grouped_fdr',
+#             input_fasta="/storage/TAA/_data/estimates/testis/filtered_TAA_testis.fasta",
+#             hla_txt=f"/storage/TAA/_data/IPs/IP_skcm/hla_type/{sample_id}_HLA_type.txt",
+#             immunopeptidomics_data=path,
+#             translation_mode='stop_to_stop',
+#             grouped_fdr=False,
+#             mhc_tool=['all']
+#         )
+#     )
     
-paths = [
-    p for p in glob('/storage/TAA/_data/IPs/PXD043057/organized_lung_samples/*')
-        if os.path.isdir(p) and 'hla_type' not in p] 
-print(paths)
+# paths = [
+#     p for p in glob('/storage/TAA/_data/IPs/PXD043057/organized_lung_samples/*')
+#         if os.path.isdir(p) and 'hla_type' not in p] 
+# print(paths)
 
-for path in paths:
-    sample_id = path.split('/')[-1]
-    print(sample_id)
-    SEARCHES.append(
-        AntigeneSearch(
-            project=sample_id.replace('-', '_')+'_without_grouped_fdr',
-            input_fasta="/storage/TAA/_data/estimates/testis/filtered_TAA_testis.fasta",
-            hla_txt=f"/storage/TAA/_data/IPs/PXD043057/organized_lung_samples/hla_type/{sample_id}_hla_type.txt",
-            immunopeptidomics_data=path,
-            translation_mode='stop_to_stop',
-            grouped_fdr=False,
-            mhc_tool=['all']
-        )
-    )
+# for path in paths:
+#     sample_id = path.split('/')[-1]
+#     print(sample_id)
+#     SEARCHES.append(
+#         AntigeneSearch(
+#             project=sample_id.replace('-', '_')+'_without_grouped_fdr',
+#             input_fasta="/storage/TAA/_data/estimates/testis/filtered_TAA_testis.fasta",
+#             hla_txt=f"/storage/TAA/_data/IPs/PXD043057/organized_lung_samples/hla_type/{sample_id}_hla_type.txt",
+#             immunopeptidomics_data=path,
+#             translation_mode='stop_to_stop',
+#             grouped_fdr=False,
+#             mhc_tool=['all']
+#         )
+#     )

@@ -14,4 +14,5 @@ workflow/profiles/*/todo.py
 .java/*
 .config/*
 .cache/*
+todo.py
 *.pyc

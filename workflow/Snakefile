@@ -20,6 +20,7 @@ class AntigeneSearch:
                     input_aa_fasta=None,     # pre-translated aa fasta (optional). For example ORFs called from Riboseq
                     translation_mode='start_to_stop',
                     data_type='DDA',    #immunopeptidomics spectral  data  type. For reasons unknown to me, DIA  only accepts .mzML format
+                    workflow_template=None,
                     fdr_for_ip=0.01,               #the default FDR value is 1%
                     grouped_fdr=True,
                     mhc_tool="all"
@@ -36,6 +37,11 @@ class AntigeneSearch:
         self.fdr_for_ip = fdr_for_ip
         self.grouped_fdr = ' --group' if grouped_fdr else ''
         self.mhc_tool = mhc_tool
+        self.workflow_template = (
+            workflow_template
+            if workflow_template is not None
+            else f"workflow/shell/template_{data_type}.workflow"
+        )
 
 
 def get_search(project):
@@ -53,10 +59,6 @@ rule all:
             f"_data/antigene_search/{search.project}/final_msfragger_database.{search.project}.{search.translation_mode}.fasta"
             for search in SEARCHES
         ],
-        # xls = [
-        #     f"_data/antigene_search/{search.project}/fragpipe_postprocessing/{search.project}.{search.translation_mode}.NetMHCpan_out.xls"
-        #     for search in SEARCHES
-        # ],
         csv = [
             f"_data/antigene_search/{search.project}/fragpipe_postprocessing/Summary.{search.project}.{search.translation_mode}.csv"
             for search in SEARCHES
@@ -165,7 +167,7 @@ rule run_Fragpipe:
     input:
         database_for_msfragger = "_data/antigene_search/{project}/final_msfragger_database.{project}.{translation_mode}.fasta",
         immunopeptidomics_data = lambda wildcards: get_search(wildcards.project).immunopeptidomics_data,
-        workflow_template = lambda wildcards: f"workflow/shell/template_{get_search(wildcards.project).data_type}.workflow"
+        workflow_template = lambda wildcards: get_search(wildcards.project).workflow_template
     output:
         workflow = "_data/antigene_search/{project}/{project}.{translation_mode}.workflow",
         psm_tsv = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}/{project}/psm.tsv"
