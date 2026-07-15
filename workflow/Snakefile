@@ -235,7 +235,7 @@ rule run_netMHCpan:
         pep = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.pep",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt
     output:
-        out = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan.out"
+         xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls"
     params:
         project = lambda wildcards: wildcards.project
     threads:
@@ -249,7 +249,7 @@ rule run_netMHCpan:
         '''
         hlas_line=$(<{input.hlas})
         /opt/netMHCpan/netMHCpan -a $hlas_line \
-            -p {input.pep} > {output.out}
+            -p {input.pep} -xls -xlsfile {output.xls} > /dev/null
         '''
 
 rule run_GibbsCluster:
@@ -305,7 +305,7 @@ rule run_MHCmotifDecon:
             -i {input.pep} \
             -a "$hlas_line" \
             -n run_{wildcards.project} \
-            -c I 
+            -c I > /dev/null
         mv run_{wildcards.project}/* "{params.outdir}"
         rm -rf run_{wildcards.project}
         '''
@@ -314,19 +314,19 @@ rule fp_output_postprocessing:
     input:
         psm_tsv = "_data/antigene_search/{project}/fragpipe_workdir.{project}.{translation_mode}/{project}/psm.tsv",
         hlas = lambda wildcards: get_search(wildcards.project).hla_txt,
-        netMHCpan_out = lambda wc: (
-            f"_data/antigene_search/{wc.project}/fragpipe_postprocessing/"
-            f"{wc.project}.{wc.translation_mode}.NetMHCpan.out"
-            if any(x in ("all", "netmhcpan") for x in get_search(wc.project).mhc_tool)
-            else []
-        ),
+        netMHCpan_xls = "_data/antigene_search/{project}/fragpipe_postprocessing/{project}.{translation_mode}.NetMHCpan_out.xls",
         GibbsCluster_csv = lambda wc: (
             f"_data/antigene_search/{wc.project}/fragpipe_postprocessing/"
             f"{wc.project}.{wc.translation_mode}.GibbsCluster_out.csv"
             if any(x in ("all", "gibbs") for x in get_search(wc.project).mhc_tool)
             else []
         ),
-        motifdecon_txt = "_data/antigene_search/{project}/fragpipe_postprocessing/run_{project}.{translation_mode}/data/output.txt",
+        motifdecon_txt = lambda wc: (
+            f"_data/antigene_search/{wc.project}/fragpipe_postprocessing/"
+            f"run_{wc.project}.{wc.translation_mode}/data/output.txt"
+            if any(x in ("all", "motifdecon") for x in get_search(wc.project).mhc_tool)
+            else []
+        ),
         hla_la_cryptic = "_data/HLA_ligand_atlas/HLA_la_reported_cryptic_peptides.csv"
     output:
         csv = "_data/antigene_search/{project}/fragpipe_postprocessing/Summary.{project}.{translation_mode}.csv"
@@ -347,15 +347,15 @@ rule fp_output_postprocessing:
             gibbs_arg="--GibbsCluster_csv {input.GibbsCluster_csv}"
         fi
 
-        net_arg=""
-        if [ -n "{input.netMHCpan_out}" ]; then
-            net_arg="--netMHCpan_out {input.netMHCpan_out}"
+        motif_arg=""
+        if [ -n "{input.motifdecon_txt}" ]; then
+            motif_arg="--motifdecon_txt {input.motifdecon_txt}"
         fi
 
         python ./workflow/shell/fp_output_post_processing.py \
             --input_tsv {input.psm_tsv} \
-            --motifdecon_txt {input.motifdecon_txt} \
-            $net_arg \
+            --netMHCpan_xls {input.netMHCpan_xls} \
+            $motif_arg \
             $gibbs_arg \
             --sample {params.project} \
             --hla "$hlas_line" \

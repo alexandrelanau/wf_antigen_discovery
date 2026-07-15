@@ -16,7 +16,7 @@ def translate_3_frames(input_fasta, output_fasta):
                 # trim to full codons
                 trimmed = shifted[:len(shifted) - (len(shifted) % 3)]
 
-                protein = str(trimmed.translate(to_stop=False))
+                protein = str(trimmed.translate(to_stop=True))
 
                 out_f.write(f">{record.id}_frame{frame+1}\n")
                 out_f.write(protein + "\n")
